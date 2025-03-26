@@ -23,17 +23,6 @@ import background_image from "../../assets/image/background.jpg"; // Import your
 
 const LoginScreen = ({ navigation }) => {
 
-  const temp_login=()=>{
-    if (email === "ast222@gmail.com" && password === "123456") {
-      navigation.navigate("home");
-    } else {
-      setError("Invalid email or password");
-    }
-    if(email === "mamoorsultan555@gmail.com" && password ==="123456"){
-      navigation.navigate("dashboard")
-    }
-   
-  }
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -165,7 +154,7 @@ const LoginScreen = ({ navigation }) => {
                 </Text>
               </View>
               <View style={styles.bottomContainer}>
-                <CustomButton text={"Login"} onPress={temp_login} />
+                <CustomButton text={"Login"} onPress={loginHandle} />
                 <View style={styles.signupContainer}>
                   <Text>Don't have an account?</Text>
                   <Text
