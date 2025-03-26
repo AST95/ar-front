@@ -2,7 +2,7 @@
   "name": "cloth-on",
   "version": "1.0.0",
   "scripts": {
-    "start": "npx react-native start --reset-cache",
+    "start": "npx react-native start --port=8088 --reset-cache",
     "android": "npx react-native run-android",
     "ios": "npx react-native run-ios",
     "web": "expo start --web",
