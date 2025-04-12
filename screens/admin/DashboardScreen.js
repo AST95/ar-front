@@ -20,8 +20,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import ProgressDialog from "react-native-progress-dialog";
 
 const DashboardScreen = ({ navigation, route }) => {
-  
-  
+  const { authUser } = route.params;
+  const [user, setUser] = useState(authUser);
   const [label, setLabel] = useState("Loading...");
   const [error, setError] = useState("");
   const [isloading, setIsloading] = useState(false);
@@ -33,91 +33,85 @@ const DashboardScreen = ({ navigation, route }) => {
     await AsyncStorage.removeItem("authUser");
     navigation.replace("login");
   };
-  const user ={
-    id: "123",
-    name: "Mamoor",
-    email: "mamoorsultan555@gmail.com",
-    password: "123456",
+
+  var myHeaders = new Headers();
+  myHeaders.append("x-auth-token", authUser.token);
+
+  var requestOptions = {
+    method: "GET",
+    headers: myHeaders,
+    redirect: "follow",
   };
 
-  // var myHeaders = new Headers();
-  // myHeaders.append("x-auth-token", authUser.token);
-
-  // var requestOptions = {
-  //   method: "GET",
-  //   headers: myHeaders,
-  //   redirect: "follow",
-  // };
-
-  // //method the fetch the statistics from server using API call
-  // const fetchStats = () => {
-  //   fetch(`${network.serverip}/dashboard`, requestOptions)
-  //     .then((response) => response.json())
-  //     .then((result) => {
-  //       if (result.success == true) {
-  //         //set the fetched data to Data state
-  //         setData([
-  //           {
-  //             id: 1,
-  //             title: "Users",
-  //             value: result.data?.usersCount,
-  //             iconName: "person",
-  //             type: "parimary",
-  //             screenName: "viewusers",
-  //           },
-  //           {
-  //             id: 2,
-  //             title: "Orders",
-  //             value: result.data?.ordersCount,
-  //             iconName: "cart",
-  //             type: "secondary",
-  //             screenName: "vieworder",
-  //           },
-  //           {
-  //             id: 3,
-  //             title: "Products",
-  //             value: result.data?.productsCount,
-  //             iconName: "md-square",
-  //             type: "warning",
-  //             screenName: "viewproduct",
-  //           },
-  //           {
-  //             id: 4,
-  //             title: "Categories",
-  //             value: result.data?.categoriesCount,
-  //             iconName: "menu",
-  //             type: "muted",
-  //             screenName: "viewcategories",
-  //           },
-  //         ]);
-  //         setError("");
-  //         setIsloading(false);
-  //       } else {
-  //         console.log(result.err);
-  //         if (result.err == "jwt expired") {
-  //           logout();
-  //         }
-  //         setError(result.message);
-  //         setIsloading(false);
-  //       }
-  //     })
-  //     .catch((error) => {
-  //       setError(error.message);
-  //       console.log("error", error);
-  //       setIsloading(false);
-  //     });
-  // };
+  //method the fetch the statistics from server using API call
+  const fetchStats = () => {
+    fetch(`${network.serverip}/dashboard`, requestOptions)
+      .then((response) => response.json())
+      .then((result) => {
+        if (result.success == true) {
+          //set the fetched data to Data state
+          setData([
+            {
+              id: 1,
+              title: "Users",
+              value: result.data?.usersCount,
+              iconName: "person",
+              type: "parimary",
+              screenName: "viewusers",
+            },
+            {
+              id: 2,
+              title: "Orders",
+              value: result.data?.ordersCount,
+              iconName: "cart",
+              type: "secondary",
+              screenName: "vieworder",
+            },
+            {
+              id: 3,
+              title: "Products",
+              value: result.data?.productsCount,
+              iconName: "md-square",
+              type: "warning",
+              screenName: "viewproduct",
+            },
+            {
+              id: 4,
+              title: "Categories",
+              value: result.data?.categoriesCount,
+              iconName: "menu",
+              type: "muted",
+              screenName: "viewcategories",
+            },
+          ]);
+          setError("");
+          setIsloading(false);
+        } else {
+          console.log(result.err);
+          if (result.err == "jwt expired") {
+            logout();
+          }
+          setError(result.message);
+          setIsloading(false);
+        }
+      })
+      .catch((error) => {
+        setError(error.message);
+        console.log("error", error);
+        setIsloading(false);
+      });
+  };
 
   //method call on Pull refresh
   const handleOnRefresh = () => {
     setRefreshing(true);
-    // fetchStats();
+    fetchStats();
     setRefreshing(false);
   };
 
   //call the fetch function initial render
   useEffect(() => {
-    // fetchStats();
+    fetchStats();
   }, []);
 
   return (
@@ -275,8 +269,8 @@ const styles = StyleSheet.create({
   },
   headingText: {
     fontSize: 20,
-    color: "#000",
+    color: colors.muted,
     fontWeight: "800",
   },
-  actionContainer: { padding: 20, width: "100%", flex: 1},
+  actionContainer: { padding: 20, width: "100%", flex: 1 },
 });
