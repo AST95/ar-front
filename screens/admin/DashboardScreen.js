@@ -5,9 +5,9 @@ import {
   TouchableOpacity,
   Text,
   ScrollView,
-  FlatList,
   RefreshControl,
-  SafeAreaView
+  SafeAreaView,
+  Dimensions,
 } from "react-native";
 import React, { useState, useEffect } from "react";
 import Ionicons from "react-native-vector-icons/Ionicons";
@@ -18,6 +18,9 @@ import OptionList from "../../components/OptionList/OptionList";
 import InternetConnectionAlert from "react-native-internet-connection-alert";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import ProgressDialog from "react-native-progress-dialog";
+import axios from "axios";
+
+const { width } = Dimensions.get("window");
 
 const DashboardScreen = ({ navigation, route }) => {
   const { authUser } = route.params;
@@ -25,252 +28,367 @@ const DashboardScreen = ({ navigation, route }) => {
   const [label, setLabel] = useState("Loading...");
   const [error, setError] = useState("");
   const [isloading, setIsloading] = useState(false);
-  const [data, setData] = useState([]);
-  const [refeshing, setRefreshing] = useState(false);
+  const [stats, setStats] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
 
-  //method to remove the auth user from async storage and navigate the login if token expires
+  // Logout function with confirmation
   const logout = async () => {
-    await AsyncStorage.removeItem("authUser");
-    navigation.replace("login");
+    Alert.alert("Logout", "Are you sure you want to logout?", [
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+      {
+        text: "Logout",
+        onPress: async () => {
+          await AsyncStorage.removeItem("authUser");
+          navigation.replace("login");
+        },
+      },
+    ]);
   };
 
-  var myHeaders = new Headers();
-  myHeaders.append("x-auth-token", authUser.token);
+  // Fetch dashboard statistics
+  const fetchStats = async () => {
+    setIsloading(true);
+    setLabel("Loading dashboard data...");
 
-  var requestOptions = {
-    method: "GET",
-    headers: myHeaders,
-    redirect: "follow",
-  };
-
-  //method the fetch the statistics from server using API call
-  const fetchStats = () => {
-    fetch(`${network.serverip}/dashboard`, requestOptions)
-      .then((response) => response.json())
-      .then((result) => {
-        if (result.success == true) {
-          //set the fetched data to Data state
-          setData([
-            {
-              id: 1,
-              title: "Users",
-              value: result.data?.usersCount,
-              iconName: "person",
-              type: "parimary",
-              screenName: "viewusers",
-            },
-            {
-              id: 2,
-              title: "Orders",
-              value: result.data?.ordersCount,
-              iconName: "cart",
-              type: "secondary",
-              screenName: "vieworder",
-            },
-            {
-              id: 3,
-              title: "Products",
-              value: result.data?.productsCount,
-              iconName: "md-square",
-              type: "warning",
-              screenName: "viewproduct",
-            },
-            {
-              id: 4,
-              title: "Categories",
-              value: result.data?.categoriesCount,
-              iconName: "menu",
-              type: "muted",
-              screenName: "viewcategories",
-            },
-          ]);
-          setError("");
-          setIsloading(false);
-        } else {
-          console.log(result.err);
-          if (result.err == "jwt expired") {
-            logout();
-          }
-          setError(result.message);
-          setIsloading(false);
-        }
-      })
-      .catch((error) => {
-        setError(error.message);
-        console.log("error", error);
-        setIsloading(false);
+    try {
+      const response = await axios.get(`${network.serverip}/dashboard`, {
+        headers: {
+          "x-auth-token": authUser.token,
+        },
       });
+
+      const result = response.data;
+
+      if (result.success) {
+        setStats([
+          {
+            id: 1,
+            title: "Users",
+            value: result.data?.usersCount,
+            iconName: "people",
+            type: "primary",
+            screenName: "viewusers",
+            color: colors.primary,
+          },
+          {
+            id: 2,
+            title: "Orders",
+            value: result.data?.ordersCount,
+            iconName: "cart",
+            type: "secondary",
+            screenName: "vieworder",
+            color: colors.secondary,
+          },
+          {
+            id: 3,
+            title: "Products",
+            value: result.data?.productsCount,
+            iconName: "cube",
+            type: "warning",
+            screenName: "viewproduct",
+            color: colors.warning,
+          },
+          {
+            id: 4,
+            title: "Categories",
+            value: result.data?.categoriesCount,
+            iconName: "list",
+            type: "muted",
+            screenName: "viewcategories",
+            color: colors.muted,
+          },
+        ]);
+        setError("");
+      } else if (result.err === "jwt expired") {
+        logout();
+      } else {
+        setError(result.message);
+      }
+    } catch (error) {
+      console.error("Dashboard Error:", error);
+      if (error.response?.data?.err === "jwt expired") {
+        logout();
+      }
+      setError(
+        error.response?.data?.message || "Failed to load dashboard data"
+      );
+    } finally {
+      setIsloading(false);
+    }
   };
 
-  //method call on Pull refresh
-  const handleOnRefresh = () => {
+  // Handle pull-to-refresh
+  const handleOnRefresh = async () => {
     setRefreshing(true);
-    fetchStats();
+    await fetchStats();
     setRefreshing(false);
   };
 
-  //call the fetch function initial render
   useEffect(() => {
     fetchStats();
   }, []);
 
   return (
-    <InternetConnectionAlert onChange={(connectionState) => {}}>
+    <InternetConnectionAlert
+      onChange={(connectionState) => {}}
+      title="No Internet Connection"
+      message="Please check your internet connection and try again"
+    >
       <SafeAreaView style={styles.container}>
-      <StatusBar translucent />
+        <StatusBar backgroundColor={colors.primary} barStyle="light-content" />
         <ProgressDialog visible={isloading} label={label} />
-        <View style={styles.topBarContainer}>
-          <TouchableOpacity
-            onPress={async () => {
-              await AsyncStorage.removeItem("authUser");
-              navigation.replace("login");
-            }}
-          >
-            <Ionicons name="log-out" size={30} color={colors.muted} />
-          </TouchableOpacity>
-          <View>
-            <Text style={styles.toBarText}>Dashboard</Text>
+
+        {/* Header Section */}
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <TouchableOpacity onPress={logout} style={styles.iconButton}>
+              <Ionicons name="log-out" size={24} color={colors.white} />
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity>
-            <Ionicons
-              name="person-circle-outline"
-              size={30}
-              color={colors.muted}
-            />
-          </TouchableOpacity>
-        </View>
-        <View style={styles.headingContainer}>
-          <MaterialCommunityIcons name="menu-right" size={30} color="black" />
-          <Text style={styles.headingText}>Welcome, Admin</Text>
-        </View>
-        <View style={{ height: 370 }}>
-          {data && (
-            <ScrollView
-              refreshControl={
-                <RefreshControl
-                  refreshing={refeshing}
-                  onRefresh={handleOnRefresh}
-                />
-              }
-              contentContainerStyle={styles.cardContainer}
+
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle}>Dashboard</Text>
+          </View>
+
+          <View style={styles.headerRight}>
+            <TouchableOpacity
+              onPress={() => navigation.navigate("profile", { authUser: user })}
+              style={styles.iconButton}
             >
-              {data.map((data) => (
+              <Ionicons name="person-circle" size={24} color={colors.white} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Main Content */}
+        <ScrollView
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleOnRefresh}
+              colors={[colors.primary]}
+              tintColor={colors.primary}
+            />
+          }
+          contentContainerStyle={styles.contentContainer}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Welcome Section */}
+          <View style={styles.welcomeContainer}>
+            <Text style={styles.welcomeText}>Welcome back,</Text>
+            <Text style={styles.adminText}>{user.name || "Admin"}</Text>
+            <Text style={styles.subtitle}>Here's what's happening today</Text>
+          </View>
+
+          {/* Stats Cards */}
+          {error ? (
+            <View style={styles.errorContainer}>
+              <Ionicons name="warning" size={30} color={colors.danger} />
+              <Text style={styles.errorText}>{error}</Text>
+              <TouchableOpacity style={styles.retryButton} onPress={fetchStats}>
+                <Text style={styles.retryButtonText}>Try Again</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.statsContainer}>
+              {stats.map((stat) => (
                 <CustomCard
-                  key={data.id}
-                  iconName={data.iconName}
-                  title={data.title}
-                  value={data.value}
-                  type={data.type}
-                  onPress={() => {
-                    navigation.navigate(data.screenName, { authUser: user });
-                  }}
+                  key={stat.id}
+                  iconName={stat.iconName}
+                  title={stat.title}
+                  value={stat.value}
+                  color={stat.color}
+                  onPress={() =>
+                    navigation.navigate(stat.screenName, { authUser: user })
+                  }
                 />
               ))}
-            </ScrollView>
+            </View>
           )}
-        </View>
-        <View style={styles.headingContainer}>
-          <MaterialCommunityIcons name="menu-right" size={30} color="black" />
-          <Text style={styles.headingText}>Actions</Text>
-        </View>
-        <View style={{ flex: 1, width: "100%" }}>
-          <ScrollView style={styles.actionContainer}>
+
+          {/* Quick Actions Section */}
+          <View style={styles.sectionHeader}>
+            <MaterialCommunityIcons
+              name="lightning-bolt"
+              size={24}
+              color={colors.primary}
+            />
+            <Text style={styles.sectionTitle}>Quick Actions</Text>
+          </View>
+
+          <View style={styles.actionsContainer}>
             <OptionList
               text={"Products"}
               Icon={Ionicons}
-              iconName={"md-square"}
+              iconName={"cube"}
+              iconColor={colors.warning}
               onPress={() =>
                 navigation.navigate("viewproduct", { authUser: user })
               }
               onPressSecondary={() =>
                 navigation.navigate("addproduct", { authUser: user })
               }
-              type="morden"
+              type="modern"
+              chevron
             />
+
             <OptionList
               text={"Categories"}
               Icon={Ionicons}
-              iconName={"menu"}
+              iconName={"list"}
+              iconColor={colors.muted}
               onPress={() =>
                 navigation.navigate("viewcategories", { authUser: user })
               }
               onPressSecondary={() =>
                 navigation.navigate("addcategories", { authUser: user })
               }
-              type="morden"
+              type="modern"
+              chevron
             />
+
             <OptionList
               text={"Orders"}
               Icon={Ionicons}
               iconName={"cart"}
+              iconColor={colors.secondary}
               onPress={() =>
                 navigation.navigate("vieworder", { authUser: user })
               }
-              type="morden"
+              type="modern"
+              chevron
             />
+
             <OptionList
               text={"Users"}
               Icon={Ionicons}
-              iconName={"person"}
+              iconName={"people"}
+              iconColor={colors.primary}
               onPress={() =>
                 navigation.navigate("viewusers", { authUser: user })
               }
-              type="morden"
+              type="modern"
+              chevron
             />
-
-            <View style={{ height: 20 }}></View>
-          </ScrollView>
-        </View>
+          </View>
+        </ScrollView>
       </SafeAreaView>
     </InternetConnectionAlert>
   );
 };
 
-export default DashboardScreen;
-
 const styles = StyleSheet.create({
   container: {
-    width: "100%",
-    flexDirecion: "row",
-    backgroundColor: colors.light,
-    alignItems: "center",
-    justifyContent: "flex-start",
-    paddingBottom: 0,
     flex: 1,
+    backgroundColor: colors.light,
   },
-  topBarContainer: {
-    width: "100%",
-    display: "flex",
+  contentContainer: {
+    paddingBottom: 20,
+  },
+  header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 20,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 15,
+    paddingVertical: 15,
+    elevation: 4,
   },
-  toBarText: {
-    fontSize: 15,
+  headerLeft: {
+    flex: 1,
+    alignItems: "flex-start",
+  },
+  headerCenter: {
+    flex: 2,
+    alignItems: "center",
+  },
+  headerRight: {
+    flex: 1,
+    alignItems: "flex-end",
+  },
+  headerTitle: {
+    fontSize: 18,
     fontWeight: "600",
+    color: colors.white,
   },
-  cardContainer: {
+  iconButton: {
+    padding: 5,
+  },
+  welcomeContainer: {
+    padding: 20,
+    paddingTop: 25,
+  },
+  welcomeText: {
+    fontSize: 22,
+    color: colors.muted,
+    marginBottom: 5,
+  },
+  adminText: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: colors.dark,
+    marginBottom: 5,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: colors.muted,
+  },
+  statsContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
-    alignContent: "center",
-    justifyContent: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 15,
+    marginBottom: 20,
   },
-  bodyContainer: {
-    width: "100%",
-  },
-  headingContainer: {
-    display: "flex",
-    justifyContent: "flex-start",
-    paddingLeft: 10,
-    width: "100%",
-    alignItems: "center",
+  sectionHeader: {
     flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    marginTop: 10,
   },
-  headingText: {
-    fontSize: 20,
-    color: colors.muted,
-    fontWeight: "800",
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: colors.dark,
+    marginLeft: 10,
   },
-  actionContainer: { padding: 20, width: "100%", flex: 1 },
+  actionsContainer: {
+    paddingHorizontal: 15,
+  },
+  errorContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
+    margin: 20,
+    backgroundColor: colors.white,
+    borderRadius: 10,
+    shadowColor: colors.dark,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  errorText: {
+    color: colors.danger,
+    fontSize: 16,
+    textAlign: "center",
+    marginVertical: 10,
+  },
+  retryButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 5,
+    marginTop: 10,
+  },
+  retryButtonText: {
+    color: colors.white,
+    fontWeight: "500",
+  },
 });
+
+export default DashboardScreen;
