@@ -8,11 +8,12 @@ import {
   FlatList,
   ScrollView,
   SafeAreaView,
+  Dimensions,
+  Animated,
 } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import cartIcon from "../../assets/icons/cart_beg.png";
-import scanIcon from "../../assets/icons/scan_icons.png";
 import easybuylogo from "../../assets/logo/logo.png";
 import { colors } from "../../constants";
 import CustomIconButton from "../../components/CustomIconButton/CustomIconButton";
@@ -21,22 +22,17 @@ import { useSelector, useDispatch } from "react-redux";
 import { bindActionCreators } from "redux";
 import * as actionCreaters from "../../states/actionCreaters/actionCreaters";
 import SearchableDropdown from "react-native-searchable-dropdown";
-import CategoriesScreen from "./CategoriesScreen";
-import { SliderBox } from "react-native-image-slider-box";
 import SofaLine from "../../assets/icons/sofa-line.png";
 import Chairs from "../../assets/icons/chair.png";
 import Stools from "../../assets/icons/stool.png";
-import Tables from "../../assets/icons/table.png";
 import SofaBanner from "../../assets/image/banners/sofa-banner.jpeg";
 import Contrast from "../../assets/image/banners/contrast.jpeg";
 import ChairBanner from "../../assets/image/banners/chair.jpeg";
 import Shirt from "../../assets/image/shirt_1.jpg";
 import Watch from "../../assets/image/Watch_1.jpg";
 import Glasses from "../../assets/image/Glasses_1.jpg";
-import { set } from "date-fns";
-import { value } from "deprecated-react-native-prop-types/DeprecatedTextInputPropTypes";
-import { src } from "deprecated-react-native-prop-types/DeprecatedImagePropType";
 
+const { width } = Dimensions.get("window");
 
 // Static categories
 const categories = [
@@ -44,29 +40,42 @@ const categories = [
     _id: "62fe244f58f7aa8230817f89",
     title: "Shirts",
     image: SofaLine,
+    color: "#FF6B6B",
   },
   {
     _id: "62fe243858f7aa8230817f86",
     title: "Watches",
     image: Chairs,
+    color: "#4ECDC4",
   },
   {
     _id: "62fe241958f7aa8230817f83",
     title: "Glasses",
     image: Stools,
+    color: "#FFD166",
   },
-  // Add more categories if needed
+  {
+    _id: "62fe241958f7aa8230817f84",
+    title: "Shoes",
+    image: Stools,
+    color: "#7C4DFF",
+  },
 ];
 
-
-// Static slides for SliderBox
-const slides = [SofaBanner, Contrast, ChairBanner];
-
+// Static slides for banner
+const slides = [
+  { id: '1', image: SofaBanner },
+  { id: '2', image: Contrast },
+  { id: '3', image: ChairBanner }
+];
 
 const HomeScreen = ({ navigation }) => {
   const cartproduct = useSelector((state) => state.product);
   const dispatch = useDispatch();
   const { addCartItem } = bindActionCreators(actionCreaters, dispatch);
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const flatListRef = useRef(null);
 
   // Hardcoded user data
   const user = {
@@ -80,9 +89,6 @@ const HomeScreen = ({ navigation }) => {
   const [products, setProducts] = useState([]);
   const [searchItems, setSearchItems] = useState([]);
   const [userInfo, setUserInfo] = useState({});
-
-  // Static Slides for SliderBox
-  const slides = [SofaBanner, Contrast, ChairBanner];
 
   // Method to convert user to JSON
   const convertToJSON = (obj) => {
@@ -99,30 +105,43 @@ const HomeScreen = ({ navigation }) => {
       {
         _id: "1",
         title: "Classic Dark Shirt",
-        image: require('../../assets/image/shirt_1.jpg'),
+        image: Shirt,
         categoryID: "62fe244f58f7aa8230817f89",
         price: 499.99,
         quantity: 10,
-        description:"Hey this is really great textured and comfortable shirt"
+        description:
+          "Premium quality shirt with comfortable fit and stylish design",
+        rating: 4.5,
       },
       {
         _id: "2",
         title: "ARMANI Watch",
-        image: require('../../assets/image/Watch_1.jpg'),
+        image: Watch,
         categoryID: "62fe241958f7aa8230817f83",
         price: 149.99,
         quantity: 25,
-        description:"Hey this is really great textured and comfortable shirt"
+        description: "Elegant timepiece with precision engineering",
+        rating: 4.8,
       },
       {
         _id: "3",
         title: "RAY BAN Glasses",
-        image: require('../../assets/image/Glasses_1.jpg'),
-        productImage:require('../../assets/image/Glasses_1.jpg'),
+        image: Glasses,
         categoryID: "62fe243858f7aa8230817f86",
         price: 299.99,
         quantity: 15,
-        description:"Hey this is really great textured and comfortable shirt"
+        description: "Stylish sunglasses with UV protection",
+        rating: 4.7,
+      },
+      {
+        _id: "4",
+        title: "Premium Leather Jacket",
+        image: Shirt,
+        categoryID: "62fe244f58f7aa8230817f89",
+        price: 399.99,
+        quantity: 8,
+        description: "Genuine leather jacket with perfect fit",
+        rating: 4.9,
       },
     ]);
   }, []);
@@ -142,6 +161,20 @@ const HomeScreen = ({ navigation }) => {
     convertToJSON(user);
   }, []);
 
+  // Auto-scroll banner
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const nextSlide = (currentSlide + 1) % slides.length;
+      setCurrentSlide(nextSlide);
+      flatListRef.current?.scrollToIndex({
+        index: nextSlide,
+        animated: true,
+      });
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [currentSlide]);
+
   // Handle Product Press
   const handleProductPress = (product) => {
     navigation.navigate("productdetail", { product: product });
@@ -152,142 +185,234 @@ const HomeScreen = ({ navigation }) => {
     addCartItem(product);
   };
 
-  
+  // Header animation
+  const headerTranslateY = scrollY.interpolate({
+    inputRange: [0, 100],
+    outputRange: [0, -50],
+    extrapolate: "clamp",
+  });
+
+  // Render banner item
+  const renderBannerItem = ({ item }) => {
+    return (
+      <View style={styles.bannerItem}>
+        <Image source={item.image} style={styles.bannerImage} />
+      </View>
+    );
+  };
+
+  // Render banner indicators
+  const renderBannerIndicators = () => {
+    return (
+      <View style={styles.indicatorContainer}>
+        {slides.map((_, index) => (
+          <View
+            key={index}
+            style={[
+              styles.indicator,
+              currentSlide === index && styles.activeIndicator,
+            ]}
+          />
+        ))}
+      </View>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar />
-      <View style={styles.topBarContainer}>
-        <TouchableOpacity disabled>
-          <Ionicons name="menu" size={30} color={colors.muted} />
-        </TouchableOpacity>
-        <View style={styles.topbarlogoContainer}>
-          <Image source={easybuylogo} style={styles.logo} />
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+
+      {/* Animated Header */}
+      <Animated.View
+        style={[
+          styles.headerContainer,
+          { transform: [{ translateY: headerTranslateY }] },
+        ]}
+      >
+        <View style={styles.headerContent}>
+          <TouchableOpacity style={styles.menuButton}>
+            <Ionicons name="menu-outline" size={28} color={colors.primary} />
+          </TouchableOpacity>
+
+          <View style={styles.logoContainer}>
+            <Image source={easybuylogo} style={styles.logo} />
+          </View>
+
+          <TouchableOpacity
+            style={styles.cartButton}
+            onPress={() => navigation.navigate("cart")}
+          >
+            {cartproduct.length > 0 && (
+              <View style={styles.cartBadge}>
+                <Text style={styles.cartBadgeText}>{cartproduct.length}</Text>
+              </View>
+            )}
+            <Ionicons name="cart-outline" size={28} color={colors.primary} />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          style={styles.cartIconContainer}
-          onPress={() => navigation.navigate("cart")}
-        >
-          {cartproduct.length > 0 && (
-            <View style={styles.cartItemCountContainer}>
-              <Text style={styles.cartItemCountText}>{cartproduct.length}</Text>
-            </View>
-          )}
-          <Image source={cartIcon} />
-        </TouchableOpacity>
-      </View>
-      <View style={styles.bodyContainer}>
+
+        {/* Search Bar */}
         <View style={styles.searchContainer}>
-          <View style={styles.inputContainer}>
-            <SearchableDropdown
-              onTextChange={(text) => console.log(text)}
-              onItemSelect={(item) => handleProductPress(item)}
-              defaultIndex={0}
-              containerStyle={{
-                borderRadius: 5,
-                width: "100%",
-                elevation: 5,
-                position: "absolute",
-                zIndex: 20,
-                top: -20,
-                maxHeight: 300,
-                backgroundColor: colors.light,
-              }}
-              textInputStyle={{
-                borderRadius: 10,
-                padding: 6,
-                paddingLeft: 10,
-                borderWidth: 0,
-                backgroundColor: colors.white,
-              }}
-              itemStyle={{
-                padding: 10,
-                marginTop: 2,
-                backgroundColor: colors.white,
-                borderColor: colors.muted,
-              }}
-              itemTextStyle={{
-                color: colors.muted,
-              }}
-              itemsContainerStyle={{
-                maxHeight: "100%",
-              }}
-              items={searchItems}
-              placeholder="Search..."
-              resetValue={false}
-              underlineColorAndroid="transparent"
-            />
-          </View>
-          
+          <SearchableDropdown
+            onTextChange={(text) => console.log(text)}
+            onItemSelect={(item) => handleProductPress(item)}
+            containerStyle={styles.searchDropdownContainer}
+            textInputStyle={styles.searchInput}
+            itemStyle={styles.searchItem}
+            itemTextStyle={styles.searchItemText}
+            itemsContainerStyle={styles.searchItemsContainer}
+            items={searchItems}
+            placeholder="Search products..."
+            placeholderTextColor={colors.muted}
+            resetValue={false}
+            underlineColorAndroid="transparent"
+          />
+          <Ionicons
+            name="search-outline"
+            size={22}
+            color={colors.muted}
+            style={styles.searchIcon}
+          />
         </View>
-        <ScrollView nestedScrollEnabled={true}>
-          <View style={styles.promotionSliderContainer}>
-            {/* Replace with <SliderBox> if needed */}
+      </Animated.View>
+
+      {/* Main Content */}
+      <ScrollView
+        style={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: false }
+        )}
+        scrollEventThrottle={16}
+      >
+        {/* Banner Slider */}
+        <View style={styles.sliderContainer}>
+          <FlatList
+            ref={flatListRef}
+            data={slides}
+            renderItem={renderBannerItem}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            keyExtractor={(item) => item.id}
+            onMomentumScrollEnd={(e) => {
+              const contentOffset = e.nativeEvent.contentOffset;
+              const viewSize = e.nativeEvent.layoutMeasurement;
+              const pageNum = Math.floor(contentOffset.x / viewSize.width);
+              setCurrentSlide(pageNum);
+            }}
+          />
+          {renderBannerIndicators()}
+        </View>
+
+        {/* Categories Section */}
+        <View style={styles.sectionContainer}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Categories</Text>
+            <TouchableOpacity onPress={() => navigation.navigate("categories")}>
+              <Text style={styles.seeAllText}>See All</Text>
+            </TouchableOpacity>
           </View>
-          <View style={styles.primaryTextContainer}>
-            <Text style={styles.primaryText}>Categories</Text>
+
+          <FlatList
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoryList}
+            data={categories}
+            keyExtractor={(item) => item._id}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={[styles.categoryCard, { backgroundColor: item.color }]}
+                onPress={() =>
+                  navigation.navigate("categories", { categoryID: item._id })
+                }
+              >
+                <Image source={item.image} style={styles.categoryImage} />
+                <Text style={styles.categoryText}>{item.title}</Text>
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+
+        {/* New Arrivals Section */}
+        <View style={styles.sectionContainer}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>New Arrivals</Text>
+            <TouchableOpacity>
+              <Text style={styles.seeAllText}>See All</Text>
+            </TouchableOpacity>
           </View>
-          <View style={styles.categoryContainer}>
-            <FlatList
-              showsHorizontalScrollIndicator={false}
-              style={styles.flatListContainer}
-              horizontal
-              data={categories}
-              keyExtractor={(item, index) => `${item._id}-${index}`}
-              renderItem={({ item }) => (
-                <View style={{ marginBottom: 10 }}>
-                  <CustomIconButton
-                    text={item.title}
-                    image={item.image}
-                    onPress={() =>
-                      navigation.navigate("categories", { categoryID: item._id })
-                    }
-                  />
-                </View>
-              )}
-            />
-          </View>
-          <View style={styles.primaryTextContainer}>
-            <Text style={styles.primaryText}>New Arrivals</Text>
-          </View>
+
           {products.length === 0 ? (
-            <View style={styles.productCardContainerEmpty}>
-              <Text style={styles.productCardContainerEmptyText}>
-                No Product
-              </Text>
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No products available</Text>
             </View>
           ) : (
-            <View style={styles.productCardContainer}>
-              <FlatList
-                showsHorizontalScrollIndicator={false}
-                horizontal
-                data={products}
-                keyExtractor={(item) => item._id}
-                renderItem={({ item }) => (
-                  <View
-                    key={item._id}
-                    style={{
-                      marginLeft: 5,
-                      marginBottom: 10,
-                      marginRight: 5,
-                    }}
-                  >
-
-                    <ProductCard
-                      name={item.title}
-                      image={item.image}
-                      price={item.price}
-                      quantity={item.quantity}
-                      onPress={() => handleProductPress(item)}
-                      onPressSecondary={() => handleAddToCart(item)}
-                    />
-                  </View>
-                )}
-              />
-            </View>
+            <FlatList
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.productList}
+              data={products}
+              keyExtractor={(item) => item._id}
+              renderItem={({ item }) => (
+                <ProductCard
+                  key={item._id}
+                  name={item.title}
+                  image={item.image}
+                  price={item.price}
+                  quantity={item.quantity}
+                  rating={item.rating}
+                  onPress={() => handleProductPress(item)}
+                  onPressSecondary={() => handleAddToCart(item)}
+                  style={styles.productCard}
+                />
+              )}
+            />
           )}
-        </ScrollView>
-      </View>
+        </View>
+
+        {/* Featured Products Section */}
+        <View style={styles.sectionContainer}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Featured Products</Text>
+            <TouchableOpacity>
+              <Text style={styles.seeAllText}>See All</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.featuredContainer}>
+            {products.slice(0, 2).map((item) => (
+              <View key={item._id} style={styles.featuredCard}>
+                <Image source={item.image} style={styles.featuredImage} />
+                <View style={styles.featuredDetails}>
+                  <Text style={styles.featuredTitle}>{item.title}</Text>
+                  <Text style={styles.featuredPrice}>
+                    ${item.price.toFixed(2)}
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.featuredButton}
+                    onPress={() => handleAddToCart(item)}
+                  >
+                    <Text style={styles.featuredButtonText}>Add to Cart</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {/* Special Offer Banner */}
+        <View style={styles.specialOfferContainer}>
+          <View style={styles.specialOfferContent}>
+            <Text style={styles.specialOfferText}>SUMMER SALE</Text>
+            <Text style={styles.specialOfferDiscount}>UP TO 50% OFF</Text>
+            <TouchableOpacity style={styles.specialOfferButton}>
+              <Text style={styles.specialOfferButtonText}>SHOP NOW</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -297,122 +422,292 @@ export default HomeScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.light,
+  },
+  headerContainer: {
     backgroundColor: "#fff",
+    paddingTop: 10,
+    paddingBottom: 15,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
   },
-  topBarContainer: {
+  headerContent: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 18,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.light,
+    justifyContent: "space-between",
+    marginBottom: 15,
   },
-  topbarlogoContainer: {
-    flexDirection: "row",
+  menuButton: {
+    padding: 5,
+  },
+  logoContainer: {
+    flex: 1,
     alignItems: "center",
   },
   logo: {
-    height: 150, // Adjusted for better visibility
-    width: 150,
+    height: 120,
+    width: 120,
     resizeMode: "contain",
-    marginRight: 10,
   },
-  toBarText: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#252422",
-  },
-  cartIconContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+  cartButton: {
+    padding: 5,
     position: "relative",
   },
-  cartItemCountContainer: {
+  cartBadge: {
     position: "absolute",
-    top: -10,
-    left: 10,
+    top: -5,
+    right: -5,
     backgroundColor: colors.primary,
-    borderRadius: 11,
-    padding: 4,
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 1,
   },
-  cartItemCountText: {
-    color: colors.light,
+  cartBadgeText: {
+    color: colors.white,
     fontSize: 12,
     fontWeight: "bold",
   },
-  bodyContainer: {
-    flex: 1,
-  },
   searchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 14,
-    marginTop: 10,
+    position: "relative",
   },
-  inputContainer: {
-    flex: 1,
-    marginRight: 10,
-  },
-  buttonContainer: {
-    marginLeft: 10,
-    marginRight: 10,
-  },
-  scanButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#000",
+  searchDropdownContainer: {
+    padding: 0,
     borderRadius: 10,
-    height: 40,
-    paddingHorizontal: 16,
-    justifyContent: "center",
+    backgroundColor: colors.white,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  scanButtonText: {
+  searchInput: {
+    height: 45,
+    borderRadius: 10,
+    paddingLeft: 40,
+    paddingRight: 15,
+    backgroundColor: colors.white,
     fontSize: 16,
-    color: colors.light,
-    fontWeight: "bold",
-    marginRight: 5, // Added space between text and icon
-  },
-  promotionSliderContainer: {
-    marginVertical: 20,
-    backgroundColor: colors.light,
-  },
-  primaryTextContainer: {
-    paddingHorizontal: 20,
-    // Removed fontSize and fontWeight from container
-    // These should be in the Text component
-    // fontSize: 20,
-    // fontWeight: "bold",
-    // color: colors.text,
-    marginBottom: 10,
-  },
-  primaryText: {
-    fontSize: 20,
-    fontWeight: "bold",
     color: colors.text,
   },
-  categoryContainer: {
+  searchIcon: {
+    position: "absolute",
+    left: 10,
+    top: 12,
+  },
+  searchItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.light,
+  },
+  searchItemText: {
+    color: colors.text,
+    fontSize: 16,
+  },
+  searchItemsContainer: {
+    maxHeight: 200,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+  },
+  contentContainer: {
+    flex: 1,
+    paddingBottom: 20,
+    paddingTop: 180, // To account for the header height
+  },
+  sliderContainer: {
+    marginTop: 15,
+    marginHorizontal: 20,
+    borderRadius: 15,
+    overflow: 'hidden',
+    height: 180,
+  },
+  bannerItem: {
+    width: width - 40,
+    height: 180,
+  },
+  bannerImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  indicatorContainer: {
+    flexDirection: 'row',
+    position: 'absolute',
+    bottom: 10,
+    alignSelf: 'center',
+  },
+  indicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.muted,
+    marginHorizontal: 4,
+  },
+  activeIndicator: {
+    backgroundColor: colors.primary,
+  },
+  sectionContainer: {
+    marginTop: 25,
+    paddingHorizontal: 20,
+  },
+  sectionHeader: {
     flexDirection: "row",
-    marginRight: 10,
-  },
-  flatListContainer: {
-    paddingHorizontal: 10,
-  },
-  emptyView: {
-    height: 20,
-  },
-  productCardContainerEmpty: {
-    padding: 20,
+    justifyContent: "space-between",
     alignItems: "center",
+    marginBottom: 15,
   },
-  productCardContainerEmptyText: {
-    fontSize: 18,
-    fontStyle: "italic",
-    color: colors.muted,
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: colors.text,
+  },
+  seeAllText: {
+    fontSize: 14,
+    color: colors.primary,
     fontWeight: "600",
+  },
+  categoryList: {
+    paddingRight: 20,
+  },
+  categoryCard: {
+    width: 100,
+    height: 120,
+    borderRadius: 15,
+    marginRight: 15,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  categoryImage: {
+    width: 50,
+    height: 50,
+    resizeMode: "contain",
+    marginBottom: 10,
+  },
+  categoryText: {
+    color: colors.white,
+    fontWeight: "600",
+    fontSize: 14,
     textAlign: "center",
   },
-  productCardContainer: {
-    paddingLeft: 10,
+  productList: {
+    paddingRight: 20,
+  },
+  productCard: {
+    marginRight: 15,
+    width: 160,
+  },
+  emptyContainer: {
+    height: 100,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyText: {
+    fontSize: 16,
+    color: colors.muted,
+  },
+  featuredContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    flexWrap: "wrap",
+  },
+  featuredCard: {
+    width: "48%",
+    backgroundColor: colors.white,
+    borderRadius: 15,
+    padding: 10,
+    marginBottom: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  featuredImage: {
+    width: "100%",
+    height: 120,
+    borderRadius: 10,
+    resizeMode: "cover",
+  },
+  featuredDetails: {
+    paddingTop: 10,
+  },
+  featuredTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: colors.text,
+    marginBottom: 5,
+  },
+  featuredPrice: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: colors.primary,
+    marginBottom: 10,
+  },
+  featuredButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 8,
+    paddingVertical: 6,
+    alignItems: "center",
+  },
+  featuredButtonText: {
+    color: colors.white,
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  specialOfferContainer: {
+    marginHorizontal: 20,
+    marginTop: 20,
+    backgroundColor: colors.primary,
+    borderRadius: 15,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  specialOfferContent: {
+    alignItems: "center",
+  },
+  specialOfferText: {
+    color: colors.white,
+    fontSize: 18,
+    fontWeight: "600",
+    marginBottom: 5,
+  },
+  specialOfferDiscount: {
+    color: colors.white,
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 15,
+  },
+  specialOfferButton: {
+    backgroundColor: colors.white,
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+  },
+  specialOfferButtonText: {
+    color: colors.primary,
+    fontWeight: "bold",
+    fontSize: 14,
   },
 });
