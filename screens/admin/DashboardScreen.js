@@ -33,19 +33,8 @@ const DashboardScreen = ({ navigation, route }) => {
 
   // Logout function with confirmation
   const logout = async () => {
-    Alert.alert("Logout", "Are you sure you want to logout?", [
-      {
-        text: "Cancel",
-        style: "cancel",
-      },
-      {
-        text: "Logout",
-        onPress: async () => {
-          await AsyncStorage.removeItem("authUser");
-          navigation.replace("login");
-        },
-      },
-    ]);
+    await AsyncStorage.removeItem("authUser");
+    navigation.replace("login");
   };
 
   // Fetch dashboard statistics
