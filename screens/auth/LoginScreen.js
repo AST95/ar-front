@@ -8,7 +8,7 @@ import {
   KeyboardAvoidingView,
   ScrollView,
   ImageBackground,
-  SafeAreaView
+  SafeAreaView,
 } from "react-native";
 import axios from "axios"; // Import Axios
 import { colors, network } from "../../constants";
@@ -22,7 +22,6 @@ import header_logo from "../../assets/logo/logo.png";
 import background_image from "../../assets/image/background.jpg"; // Import your background image
 
 const LoginScreen = ({ navigation }) => {
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -37,10 +36,6 @@ const LoginScreen = ({ navigation }) => {
       setError(error);
     }
   };
-
- 
-
-  
 
   // Method to validate the user credentials and navigate to Home Screen / Dashboard
   const loginHandle = async () => {
@@ -77,12 +72,12 @@ const LoginScreen = ({ navigation }) => {
         email,
         password,
       });
+
       const result = response.data;
-      if (
-        result.status === 200 ||
-        (result.status === 1 && result.success !== false)
-      ) {
+
+      if (response.status === 200 && result.success === true) {
         if (result?.data?.userType === "ADMIN") {
+          console.log("LOGIN RESULT :>> ", result);
           _storeData(result.data);
           navigation.navigate("dashboard", { authUser: result.data });
         } else {
@@ -91,7 +86,7 @@ const LoginScreen = ({ navigation }) => {
         }
       } else {
         setIsLoading(false);
-        setError(result.message);
+        setError(result.message || "Login failed");
       }
     } catch (error) {
       console.error("LOGIN ERROR :>> ", error);
@@ -117,10 +112,7 @@ const LoginScreen = ({ navigation }) => {
     <InternetConnectionAlert onChange={(connectionState) => {}}>
       <KeyboardAvoidingView behavior="padding" style={styles.container}>
         <SafeAreaView style={styles.container}>
-          <ImageBackground
-            
-            style={styles.backgroundImage}
-          >
+          <ImageBackground style={styles.backgroundImage}>
             <ScrollView contentContainerStyle={styles.scrollView}>
               <ProgressDialog visible={isLoading} label={"Login ..."} />
               <StatusBar />
@@ -181,7 +173,7 @@ const styles = StyleSheet.create({
   },
   backgroundImage: {
     flex: 1,
-    backgroundColor:"#fff",
+    backgroundColor: "#fff",
     resizeMode: "cover",
     justifyContent: "center",
   },
@@ -227,7 +219,6 @@ const styles = StyleSheet.create({
   signupContainer: {
     flexDirection: "row",
     marginTop: 15,
-    
   },
   signupText: {
     marginLeft: 5,
