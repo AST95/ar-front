@@ -4,7 +4,8 @@ import {
   View,
   StatusBar,
   TouchableOpacity,
-  SafeAreaView
+  SafeAreaView,
+  ScrollView,
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import UserProfileCard from "../../components/UserProfileCard/UserProfileCard";
@@ -25,70 +26,69 @@ const UserProfileScreen = ({ navigation, route }) => {
     }
   };
 
-  // covert  the user to Json object on initial render
   useEffect(() => {
     convertToJSON(user);
   }, []);
+
   return (
-    <View style={styles.container}>
-      <SafeAreaView style={styles.container}>
-        <StatusBar style="auto"></StatusBar>
-        <View style={styles.TopBarContainer}>
-          <TouchableOpacity>
-            <Ionicons name="menu-sharp" size={30} color={colors.primary} />
-          </TouchableOpacity>
-        </View>
-        <View style={styles.screenNameContainer}>
-          <Text style={styles.screenNameText}>Profile</Text>
-        </View>
-        <View style={styles.UserProfileCardContianer}>
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
+      
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.menuButton}>
+          <Ionicons name="menu-sharp" size={28} color={colors.primary} />
+        </TouchableOpacity>
+        <Text style={styles.screenTitle}>My Profile</Text>
+        <View style={styles.headerRightPlaceholder} />
+      </View>
+
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        {/* User Profile Card */}
+        <View style={styles.userProfileContainer}>
           <UserProfileCard
             Icon={Ionicons}
             name={userInfo?.name}
             email={userInfo?.email}
           />
         </View>
-        <View style={styles.OptionsContainer}>
-          <OptionList
-            text={"My Account"}
-            Icon={Ionicons}
-            iconName={"person"}
-            onPress={() => navigation.navigate("myaccount", { user: userInfo })}
-          />
-          <OptionList
-            text={"Wishlist"}
-            Icon={Ionicons}
-            iconName={"heart"}
-            onPress={() =>
-              navigation.navigate("mywishlist", { user: userInfo })
-            }
-          />
-          {/* !For future use --- */}
-          {/* <OptionList
-          text={"Settings"}
-          Icon={Ionicons}
-          iconName={"settings-sharp"}
-          onPress={() => console.log("working....")}
-        />
-        <OptionList
-          text={"Help Center"}
-          Icon={Ionicons}
-          iconName={"help-circle"}
-          onPress={() => console.log("working....")}
-        /> */}
-          {/* !For future use ---- End */}
-          <OptionList
-            text={"Logout"}
-            Icon={Ionicons}
-            iconName={"log-out"}
-            onPress={async () => {
-              await AsyncStorage.removeItem("authUser");
-              navigation.replace("login");
-            }}
-          />
+
+        {/* Options */}
+        <View style={styles.optionsSection}>
+          <Text style={styles.sectionTitle}>Account</Text>
+          <View style={styles.card}>
+            <OptionList
+              text="My Account"
+              Icon={Ionicons}
+              iconName="person-outline"
+              onPress={() => navigation.navigate("myaccount", { user: userInfo })}
+            />
+            <OptionList
+              text="Wishlist"
+              Icon={Ionicons}
+              iconName="heart-outline"
+              onPress={() => navigation.navigate("mywishlist", { user: userInfo })}
+            />
+          </View>
         </View>
-      </SafeAreaView>
-    </View>
+
+        <View style={styles.optionsSection}>
+          <Text style={styles.sectionTitle}>Actions</Text>
+          <View style={styles.card}>
+            <OptionList
+              text="Logout"
+              Icon={Ionicons}
+              iconName="log-out-outline"
+              isLastItem={true}
+              onPress={async () => {
+                await AsyncStorage.removeItem("authUser");
+                navigation.replace("login");
+              }}
+            />
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
@@ -96,40 +96,62 @@ export default UserProfileScreen;
 
 const styles = StyleSheet.create({
   container: {
-    width: "100%",
-    flexDirecion: "row",
-    backgroundColor: colors.light,
-    alignItems: "center",
-    justifyContent: "flex-start",
-    padding: 20,
     flex: 1,
+    backgroundColor: colors.white,
   },
-  TopBarContainer: {
-    width: "100%",
-    display: "flex",
+  scrollContainer: {
+    paddingBottom: 20,
+  },
+  header: {
     flexDirection: "row",
-    justifyContent: "flex-start",
+    justifyContent: "space-between",
     alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    backgroundColor: colors.white,
+    borderBottomWidth: 0.6,
+    borderBottomColor: colors.lightGrey,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
-  UserProfileCardContianer: {
-    width: "100%",
-    height: "25%",
+  menuButton: {
+    padding: 6,
+    borderRadius: 8,
   },
-  screenNameContainer: {
-    marginTop: 10,
-    width: "100%",
-    display: "flex",
-    flexDirection: "row",
-    justifyContent: "flex-start",
-    alignItems: "center",
-    marginBottom: 10,
+  screenTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: colors.primary,
   },
-  screenNameText: {
-    fontSize: 30,
-    fontWeight: "800",
-    color: colors.muted,
+  headerRightPlaceholder: {
+    width: 28,
   },
-  OptionsContainer: {
-    width: "100%",
+  userProfileContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 30,
+    paddingBottom: 15,
+  },
+  optionsSection: {
+    marginTop: 20,
+    paddingHorizontal: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: colors.dark,
+    marginBottom: 12,
+  },
+  card: {
+    backgroundColor: "#fdfdfd",
+    borderRadius: 16,
+    elevation: 3,
+    paddingVertical: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 5,
   },
 });
