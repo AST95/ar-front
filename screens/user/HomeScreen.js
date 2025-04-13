@@ -426,8 +426,8 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     backgroundColor: "#fff",
-    paddingTop: 10,
-    paddingBottom: 15,
+    paddingTop: -19,
+    paddingBottom: 10,
     paddingHorizontal: 20,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
@@ -437,7 +437,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 5,
     position: "absolute",
-    top: 0,
+    top: -10,
     left: 0,
     right: 0,
     zIndex: 100,
@@ -446,7 +446,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 15,
+    marginBottom: 10,
   },
   menuButton: {
     padding: 5,
