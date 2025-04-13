@@ -1,14 +1,11 @@
-import { StyleSheet, Image, TouchableOpacity } from "react-native";
+import { StyleSheet, Image, TouchableOpacity, View } from "react-native";
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import Ionicons from "react-native-vector-icons/Ionicons";
+import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import HomeScreen from "../../screens/user/HomeScreen";
 import { colors } from "../../constants";
 import UserProfileScreen from "../../screens/profile/UserProfileScreen";
-import HomeIconActive from "../../assets/icons/bar_home_icon_active.png";
-import HomeIcon from "../../assets/icons/bar_home_icon.png";
-import userIcon from "../../assets/icons/bar_profile_icon.png";
-import userIconActive from "../../assets/icons/bar_profile_icon_active.png";
 import MyOrderScreen from "../../screens/user/MyOrderScreen";
 import CategoriesScreen from "../../screens/user/CategoriesScreen";
 
@@ -16,126 +13,98 @@ const Tab = createBottomTabNavigator();
 
 const Tabs = ({ navigation, route }) => {
   const { user } = route.params;
+  
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarHideOnKeyboard: true,
-        tabBarStyle: [
-          {
-            display: "flex",
-          },
-          null,
-        ],
-        headerShown: false,
-        tabBarShowLabel: false,
-        tabBarActiveTintColor: colors.primary,
-
-        tabBarIcon: ({ focused }) => {
-          let routename = route.name;
-          if (routename == "home") {
-            return (
-              <TouchableOpacity disabled>
-                {focused == true ? (
-                  <Image
-                    source={HomeIconActive}
-                    style={StyleSheet.tabIconStyle}
-                  />
-                ) : (
-                  <Image source={HomeIcon} style={StyleSheet.tabIconStyle} />
-                )}
-              </TouchableOpacity>
-            );
-          } else if (routename == "categories") {
-            return (
-              <TouchableOpacity disabled>
-                {focused == true ? (
-                  <Ionicons
-                    name="ios-apps-sharp"
-                    size={29}
-                    color={colors.primary}
-                  />
-                ) : (
-                  <Ionicons
-                    name="ios-apps-sharp"
-                    size={29}
-                    color={colors.muted}
-                  />
-                )}
-              </TouchableOpacity>
-            );
-          } else if (routename == "myorder") {
-            return (
-              <TouchableOpacity disabled>
-                {focused == true ? (
-                  <Ionicons
-                    name="cart-outline"
-                    size={29}
-                    color={colors.primary}
-                  />
-                ) : (
-                  <Ionicons
-                    name="cart-outline"
-                    size={29}
-                    color={colors.muted}
-                  />
-                )}
-              </TouchableOpacity>
-            );
-          } else if (routename == "user") {
-            return (
-              <TouchableOpacity disabled>
-                {focused == true ? (
-                  <Image
-                    source={userIconActive}
-                    style={StyleSheet.tabIconStyle}
-                  />
-                ) : (
-                  <Image source={userIcon} style={StyleSheet.tabIconStyle} />
-                )}
-              </TouchableOpacity>
-            );
-          }
-        },
-        tabBarStyle: {
-          borderTopLeftRadius: 20,
-          borderTopRightRadius: 20,
-          backgroundColor: colors.white,
-        },
-      })}
-    >
-      <Tab.Screen
-        name="home"
+    screenOptions={({ route }) => ({
+      tabBarHideOnKeyboard: true,
+      headerShown: false,
+      tabBarShowLabel: false, // ⬅️ Hide the tab labels
+      tabBarActiveTintColor: colors.primary,
+      tabBarInactiveTintColor: colors.muted,
+      tabBarStyle: {
+        height: 50,
+        paddingTop: 4,
+        borderTopWidth: 1,
+        backgroundColor: colors.white,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 10,
+        borderRadius: 14,
+      },
+      tabBarIcon: ({ focused, color, size }) => {
+        let iconSize = 24;
+  
+        if (route.name === 'home') {
+          return (
+            <View style={focused ? styles.activeIconContainer : null}>
+              <Ionicons
+                name={focused ? 'home' : 'home-outline'}
+                size={iconSize}
+                color={color}
+              />
+            </View>
+          );
+        } else if (route.name === 'categories') {
+          return (
+            <View style={focused ? styles.activeIconContainer : null}>
+              <MaterialIcons
+                name="category"
+                size={iconSize}
+                color={color}
+              />
+            </View>
+          );
+        } else if (route.name === 'myorder') {
+          return (
+            <View style={focused ? styles.activeIconContainer : null}>
+              <Ionicons
+                name={focused ? 'cart' : 'cart-outline'}
+                size={iconSize}
+                color={color}
+              />
+            </View>
+          );
+        } else if (route.name === 'user') {
+          return (
+            <View style={focused ? styles.activeIconContainer : null}>
+              <Ionicons
+                name={focused ? 'person' : 'person-outline'}
+                size={iconSize}
+                color={color}
+              />
+            </View>
+          );
+        }
+      },
+    })}
+  >
+  
+      <Tab.Screen 
+        name="home" 
         component={HomeScreen}
         initialParams={{ user: user }}
-        tabBarOptions={{
-          style: {
-            position: "absolute",
-          },
-        }}
+        options={{ title: 'Home' }}
       />
-      <Tab.Screen
-        name="categories"
+      <Tab.Screen 
+        name="categories" 
         component={CategoriesScreen}
         initialParams={{ user: user }}
-        tabBarOptions={{
-          tabBarHideOnKeyboard: true,
-          style: {
-            position: "absolute",
-          },
-        }}
+        options={{ title: 'Categories' }}
       />
-      {
-        // Wishlist is ready yet!
-        <Tab.Screen
-          name="myorder"
-          component={MyOrderScreen}
-          initialParams={{ user: user }}
-        />
-      }
-      <Tab.Screen
-        name="user"
+      <Tab.Screen 
+        name="myorder" 
+        component={MyOrderScreen}
+        initialParams={{ user: user }}
+        options={{ title: 'Orders' }}
+      />
+      <Tab.Screen 
+        name="user" 
         component={UserProfileScreen}
         initialParams={{ user: user }}
+        options={{ title: 'Profile' }}
       />
     </Tab.Navigator>
   );
@@ -144,8 +113,14 @@ const Tabs = ({ navigation, route }) => {
 export default Tabs;
 
 const styles = StyleSheet.create({
-  tabIconStyle: {
-    width: 10,
-    height: 10,
+  activeIconContainer: {
+    backgroundColor: colors.primary + '20', // 20% opacity
+    padding: 8,
+    borderRadius: 20,
+  },
+  tabBar: {
+    position: 'absolute',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
   },
 });
