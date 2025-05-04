@@ -28,9 +28,12 @@ import Stools from "../../assets/icons/stool.png";
 import SofaBanner from "../../assets/image/banners/sofa-banner.jpeg";
 import Contrast from "../../assets/image/banners/contrast.jpeg";
 import ChairBanner from "../../assets/image/banners/chair.jpeg";
-import Shirt from "../../assets/image/shirt_1.jpg";
 import Watch from "../../assets/image/Watch_1.jpg";
 import Glasses from "../../assets/image/Glasses_1.jpg";
+import Glasses_ban from"../../assets/image/Glasses_banner.png";
+import Watch_ban from"../../assets/image/Watch_banner.jpg";
+import Glasses_ban2 from"../../assets/image/Glasses_banner2.png";
+import POLO from"../../assets/image/polo.jpg";
 
 const { width } = Dimensions.get("window");
 
@@ -54,19 +57,14 @@ const categories = [
     image: Stools,
     color: "#FFD166",
   },
-  {
-    _id: "62fe241958f7aa8230817f84",
-    title: "Shoes",
-    image: Stools,
-    color: "#7C4DFF",
-  },
+  
 ];
 
 // Static slides for banner
 const slides = [
-  { id: '1', image: SofaBanner },
-  { id: '2', image: Contrast },
-  { id: '3', image: ChairBanner }
+  { id: '1', image:  Glasses_ban},
+  { id: '2', image: Watch_ban },
+  { id: '3', image: Glasses_ban2 }
 ];
 
 const HomeScreen = ({ navigation }) => {
@@ -104,10 +102,10 @@ const HomeScreen = ({ navigation }) => {
     setProducts([
       {
         _id: "1",
-        title: "Classic Dark Shirt",
-        image: Shirt,
+        title: "Classic Dark Blue Shirt",
+        image: POLO,
         categoryID: "62fe244f58f7aa8230817f89",
-        price: 499.99,
+        price: 499,
         quantity: 10,
         description:
           "Premium quality shirt with comfortable fit and stylish design",
@@ -133,16 +131,7 @@ const HomeScreen = ({ navigation }) => {
         description: "Stylish sunglasses with UV protection",
         rating: 4.7,
       },
-      {
-        _id: "4",
-        title: "Premium Leather Jacket",
-        image: Shirt,
-        categoryID: "62fe244f58f7aa8230817f89",
-        price: 399.99,
-        quantity: 8,
-        description: "Genuine leather jacket with perfect fit",
-        rating: 4.9,
-      },
+      
     ]);
   }, []);
 
@@ -536,7 +525,7 @@ const styles = StyleSheet.create({
   },
   bannerItem: {
     width: width - 40,
-    height: 180,
+    height: 225,
   },
   bannerImage: {
     width: '100%',
